@@ -31,3 +31,7 @@ export type { SourceRecord } from "./source-repository.js";
 
 export { WatchlistRepository } from "./watchlist-repository.js";
 export { AlertRuleRepository } from "./alert-rule-repository.js";
+
+// Candidate search + canonical linking for the same-question matching engine
+// (implements the @pma/core MatchingRepository port; design.md matchMarket).
+export { MatchingRepository, DEFAULT_CANDIDATE_LIMIT } from "./matching-repository.js";

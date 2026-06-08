@@ -117,3 +117,8 @@ export type {
 // NOT for production — production wires a real embedding model behind the
 // EmbeddingProvider port. Exported so matching tests can share one fake.
 export { DEFAULT_EMBEDDING_DIMENSIONS, BagOfWordsEmbeddingProvider } from "./test-support.js";
+
+// Orchestrator (design.md `matchMarket`): composes Layers 1–4 into a single
+// call per market (prefilter → similarity → calibration → alignment/link).
+export { matchMarket } from "./match-market.js";
+export type { MatchMarketDeps, MatchMarketOptions, MatchResult } from "./match-market.js";

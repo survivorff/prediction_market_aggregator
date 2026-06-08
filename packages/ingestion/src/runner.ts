@@ -30,14 +30,23 @@
  * (registry-driven — adding a platform needs no call-site change here).
  */
 
-import type { Market, MarketSource } from "@pma/core";
+import type { Category, Market, MarketSource } from "@pma/core";
 import {
   MarketRepository,
   OutcomeRepository,
   mapMarketRow,
+  timestampToIso,
   type MarketRow,
   type Queryable,
 } from "@pma/storage";
+import {
+  matchMarket,
+  type CalibrationQueue,
+  type EmbeddingProvider,
+  type MatchLabelStore,
+  type MatchMarketOptions,
+} from "@pma/matching";
+import type { MatchingRepository } from "@pma/core";
 import { syncMarkets, type SyncResult } from "./sync-markets.js";
 import { createFetchWrapper, type RateLimiter } from "./with-retry.js";
 import {
@@ -280,4 +289,107 @@ export function startSourcePriceStream(
 /** Build the `(externalId, label)` map key (NUL-separated to avoid collisions). */
 function idKey(marketExternalId: string, outcomeLabel: string): string {
   return `${marketExternalId}\u0000${outcomeLabel}`;
+}
+
+// ---------------------------------------------------------------------------
+// Matching pass — wires the same-question matching engine into the runner
+// ---------------------------------------------------------------------------
+
+/** Injected collaborators for {@link runMatchingPass}. */
+export interface MatchingPassDeps {
+  /** Postgres handle for loading the markets to match. */
+  db: Queryable;
+  /** Candidate search + canonical linking (storage-backed `MatchingRepository`). */
+  matchingRepo: MatchingRepository;
+  /** Provider-agnostic embedding port (Layer 2). Swap in a real model in prod. */
+  embeddings: EmbeddingProvider;
+  /** Human calibration queue for ambiguous/high-value pairs (Layer 3). */
+  calibrationQueue: CalibrationQueue;
+  /** Optional labeled-data store (the calibration feedback loop). */
+  matchLabels?: MatchLabelStore;
+  /** Per-layer matching tuning. */
+  matchOptions?: MatchMarketOptions;
+  /** Optional structured logger. */
+  logger?: RunnerLogger;
+}
+
+/** Tally returned by {@link runMatchingPass}. */
+export interface MatchingPassResult {
+  /** Markets evaluated this pass. */
+  evaluated: number;
+  /** Pairs auto-confirmed and linked to a canonical event. */
+  matched: number;
+  /** Of the matched, those flagged with a resolution mismatch. */
+  mismatched: number;
+  /** Pairs routed to the human calibration queue. */
+  queued: number;
+}
+
+/**
+ * Run one bounded same-question matching pass: take the highest-volume OPEN
+ * markets that are **not yet linked** to a canonical event, and run each
+ * through {@link matchMarket} (Layer 1–4). Auto-confirmed aligned pairs are
+ * linked cross-platform (forming the `CanonicalEvent`s that power the
+ * comparison view + spread signals); divergent pairs are linked but flagged;
+ * ambiguous/high-value pairs go to the calibration queue.
+ *
+ * Bounded by `maxMarkets` so a pass stays tractable even with a catalog of tens
+ * of thousands of markets (matching every market on every sync is not viable;
+ * the highest-volume unlinked markets are the ones most likely to have a
+ * cross-platform twin and are matched first).
+ *
+ * The candidate's `category` (denormalized on the market row) and `endDate`
+ * (its owning event) are loaded here to build the Layer-1 `MatchCandidate`.
+ */
+export async function runMatchingPass(
+  deps: MatchingPassDeps,
+  maxMarkets: number,
+): Promise<MatchingPassResult> {
+  const rows = await deps.db.query<MarketRow & { end_date: string | Date | null }>(
+    `SELECT m.id, m.source_id, m.event_id, m.canonical_event_id, m.external_id,
+            m.question, m.category, m.status, m.volume_24h, m.liquidity, m.spread,
+            m.resolution_criteria, m.resolution_mismatch, m.updated_at,
+            e.end_date AS end_date
+       FROM market m
+       LEFT JOIN event e ON e.id = m.event_id
+      WHERE m.status = 'open' AND m.canonical_event_id IS NULL
+      ORDER BY m.volume_24h DESC NULLS LAST, m.id ASC
+      LIMIT $1`,
+    [maxMarkets],
+  );
+
+  const result: MatchingPassResult = { evaluated: 0, matched: 0, mismatched: 0, queued: 0 };
+
+  for (const row of rows.rows) {
+    const market: Market = mapMarketRow(row);
+    const candidate = {
+      market,
+      category: row.category as Category,
+      endDate: row.end_date !== null ? timestampToIso(row.end_date) : null,
+    };
+    result.evaluated += 1;
+    try {
+      const outcome = await matchMarket(
+        candidate,
+        {
+          repo: deps.matchingRepo,
+          embeddings: deps.embeddings,
+          queue: deps.calibrationQueue,
+          labels: deps.matchLabels,
+        },
+        deps.matchOptions,
+      );
+      if (outcome.kind === "Matched") {
+        result.matched += 1;
+        if (outcome.mismatch) result.mismatched += 1;
+      } else if (outcome.kind === "PendingCalibration") {
+        result.queued += 1;
+      }
+    } catch (error) {
+      deps.logger?.("match error", { market: market.id, error: String(error) });
+    }
+  }
+
+  deps.logger?.("matching pass complete", { ...result });
+  return result;
 }

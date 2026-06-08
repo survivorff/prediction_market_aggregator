@@ -52,6 +52,7 @@ export {
   SourceRepository,
   WatchlistRepository,
   AlertRuleRepository,
+  MatchingRepository,
 } from "./repositories/index.js";
 export type {
   MarketSortKey,

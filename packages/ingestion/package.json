@@ -22,6 +22,7 @@
   "dependencies": {
     "@pma/adapters": "*",
     "@pma/core": "*",
+    "@pma/matching": "*",
     "@pma/storage": "*"
   }
 }

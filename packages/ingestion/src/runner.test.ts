@@ -13,12 +13,25 @@ import type { Queryable } from "@pma/storage";
 import {
   loadActiveMarketSet,
   resolveSourceId,
+  runMatchingPass,
   startSourcePriceStream,
   syncSourceMetadata,
   type ActiveMarketSet,
   type IngestionRunnerDeps,
 } from "./runner.js";
 import { TokenBucketRateLimiter } from "./with-retry.js";
+import {
+  BagOfWordsEmbeddingProvider,
+  InMemoryCalibrationQueue,
+  InMemoryMatchLabelStore,
+} from "@pma/matching";
+import type {
+  CandidateQuery,
+  CanonicalEvent,
+  CanonicalLinkOptions,
+  LinkedMarket,
+  MatchingRepository,
+} from "@pma/core";
 
 /**
  * Unit tests for the ingestion runner orchestration with INJECTED fakes — no
@@ -341,5 +354,121 @@ describe("startSourcePriceStream", () => {
     expect(records.hot).toEqual([{ marketId: "472", label: "Yes", price: 0.6 }]);
     expect(records.points).toEqual([{ marketId: "mkt-1", outcomeId: "o-yes", price: 0.6 }]);
     expect(records.published).toEqual([{ marketId: "472", price: 0.6 }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// runMatchingPass
+// ---------------------------------------------------------------------------
+
+/** A fake MatchingRepository: a fixed candidate pool + recorded links. */
+class FakeMatchingRepo implements MatchingRepository {
+  links: Array<{ a: string; b: string; mismatch: boolean }> = [];
+  constructor(private readonly pool: ReturnType<typeof matchMarketRow>[]) {}
+  findCandidates(_q: CandidateQuery): Promise<ReturnType<typeof matchMarketRow>[]> {
+    return Promise.resolve(this.pool);
+  }
+  linkToCanonical(
+    a: { id: string },
+    b: { id: string },
+    options: CanonicalLinkOptions,
+  ): Promise<CanonicalEvent> {
+    this.links.push({ a: a.id, b: b.id, mismatch: options.mismatch });
+    return Promise.resolve({
+      id: "canon-1",
+      title: "t",
+      category: "crypto",
+      subjectEntity: null,
+      thresholdValue: null,
+      targetDate: null,
+    });
+  }
+  marketsForCanonical(_id: string): Promise<LinkedMarket[]> {
+    return Promise.resolve([]);
+  }
+}
+
+/** A domain Market with the same resolution criteria as the matched candidate. */
+function matchMarketRow(id: string, question: string) {
+  return {
+    id,
+    sourceId: "src-2",
+    eventId: null,
+    canonicalEventId: null,
+    externalId: `ext-${id}`,
+    question,
+    status: "open" as const,
+    volume24h: 100,
+    liquidity: 50,
+    spread: 0.02,
+    resolutionCriteria: { dataSource: "Coinbase", cutoffTime: null, rounding: null, raw: {} },
+  };
+}
+
+describe("runMatchingPass", () => {
+  const Q = "Will BTC close above 100000 USD by end of 2025";
+
+  /** A market ROW (snake_case) as returned by the SQL join in runMatchingPass. */
+  function dbRow(id: string, question: string): Record<string, unknown> {
+    return {
+      id,
+      source_id: "src-1",
+      event_id: null,
+      canonical_event_id: null,
+      external_id: `ext-${id}`,
+      question,
+      category: "crypto",
+      status: "open",
+      volume_24h: 9999,
+      liquidity: 100,
+      spread: 0.02,
+      resolution_criteria: { dataSource: "Coinbase", cutoffTime: null, rounding: null, raw: {} },
+      resolution_mismatch: false,
+      updated_at: "2025-01-01T00:00:00.000Z",
+      end_date: null,
+    };
+  }
+
+  it("matches unlinked markets and links them via the matching repo", async () => {
+    const db = fakeDb((sql) => {
+      if (sql.includes("FROM market m") && sql.includes("canonical_event_id IS NULL")) {
+        return { rows: [dbRow("m-1", Q)] };
+      }
+      return { rows: [] };
+    });
+    const repo = new FakeMatchingRepo([matchMarketRow("m-2", Q)]); // identical question → auto-confirm + aligned
+
+    const result = await runMatchingPass(
+      {
+        db,
+        matchingRepo: repo,
+        embeddings: new BagOfWordsEmbeddingProvider(),
+        calibrationQueue: new InMemoryCalibrationQueue(),
+        matchLabels: new InMemoryMatchLabelStore(),
+      },
+      50,
+    );
+
+    expect(result.evaluated).toBe(1);
+    expect(result.matched).toBe(1);
+    expect(result.mismatched).toBe(0);
+    expect(repo.links).toHaveLength(1);
+    expect(repo.links[0]?.mismatch).toBe(false);
+  });
+
+  it("evaluates nothing when there are no unlinked open markets", async () => {
+    const db = fakeDb(() => ({ rows: [] }));
+    const repo = new FakeMatchingRepo([]);
+    const result = await runMatchingPass(
+      {
+        db,
+        matchingRepo: repo,
+        embeddings: new BagOfWordsEmbeddingProvider(),
+        calibrationQueue: new InMemoryCalibrationQueue(),
+      },
+      50,
+    );
+    expect(result.evaluated).toBe(0);
+    expect(result.matched).toBe(0);
   });
 });

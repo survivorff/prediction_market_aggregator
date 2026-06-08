@@ -114,9 +114,13 @@ export {
   syncSourceMetadata,
   loadActiveMarketSet,
   startSourcePriceStream,
+  runMatchingPass,
 } from "./runner.js";
 export type {
   IngestionRunnerDeps,
   ActiveMarketSet,
+  PriceIdStrategy,
   RunnerLogger,
+  MatchingPassDeps,
+  MatchingPassResult,
 } from "./runner.js";

@@ -15,8 +15,9 @@ technical + business design, and
 - **Adapters**: Polymarket (Gamma + CLOB + WebSocket), Manifold (REST), and
   Predict.fun (BNB-Chain CLOB, REST) behind one `MarketSource` port.
 - **Ingestion runner** (`@pma/ingestion`): periodic idempotent metadata sync +
-  resilient price streaming (WebSocket for Polymarket, polling for the rest),
-  proven against the real upstream APIs.
+  resilient price streaming (WebSocket for Polymarket, polling for the rest) +
+  a bounded same-question matching pass that forms cross-platform
+  `CanonicalEvent`s — all proven against the real upstream APIs.
 - **API gateway** (`@pma/api`): REST + WebSocket fan-out, unified rate limiting,
   input validation, injectable auth, CORS.
 - **Web** (`apps/web`): Next.js discovery / comparison / signals / watchlist.
@@ -28,16 +29,21 @@ Priority order toward a usable, production-grade v1.
 
 ### P0 — release blockers
 
-1. **Wire the matching engine into the runner.** `enqueueForMatching` is
-   currently a no-op, so live data forms **no** cross-platform `CanonicalEvent`s
-   and therefore no real comparisons/signals (the core value). Orchestrate the
-   `@pma/matching` layers (prefilter → similarity → calibration → alignment →
-   link) on each ingested market, and provide a real `EmbeddingProvider` (only a
-   deterministic bag-of-words test fake exists today).
+1. **~~Wire the matching engine into the runner.~~** ✅ Done. The runner now runs
+   a bounded same-question matching pass each cycle (`runMatchingPass` →
+   `matchMarket`: prefilter → similarity → calibration → alignment → link),
+   forming cross-platform `CanonicalEvent`s from live data. **Remaining quality
+   work**: the default embedding provider is a deterministic offline
+   bag-of-words model (`BagOfWordsEmbeddingProvider`) — swap in a real model
+   (hosted or local sentence-embeddings) behind the `EmbeddingProvider` port for
+   production-grade match recall/precision. Matching is restricted to
+   cross-source pairs (an aggregator links across venues); the calibration queue
+   + label store are in-memory (auto-confirmed links persist; durable
+   queue/`match_label` wiring is a follow-up).
 2. **Category enrichment.** Synced markets are all `category = 'other'` (event
    metadata is not synced and the domain `Market` carries no category). Add
    event sync + category projection, or per-adapter market-level category
-   derivation.
+   derivation. (Also improves matching: candidate pre-filtering keys on category.)
 3. **Real authentication + secrets.** Replace the dev bearer token with a real
    identity provider behind the existing `authenticate` port; move all
    credentials (DB, Redis, upstream API keys) into a secrets manager. Remove the

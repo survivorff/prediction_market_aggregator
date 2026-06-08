@@ -38,19 +38,27 @@ import {
   FanoutPublisher,
   HotPriceCache,
   MarketRepository,
+  MatchingRepository,
   OutcomeRepository,
   PricePointRepository,
   type RedisClient,
 } from "@pma/storage";
+import {
+  BagOfWordsEmbeddingProvider,
+  InMemoryCalibrationQueue,
+  InMemoryMatchLabelStore,
+} from "@pma/matching";
 import type { MarketSource } from "@pma/core";
 import { InMemoryAdapterRegistry } from "./registry.js";
 import { TokenBucketRateLimiter } from "./with-retry.js";
 import {
   loadActiveMarketSet,
   resolveSourceId,
+  runMatchingPass,
   startSourcePriceStream,
   syncSourceMetadata,
   type IngestionRunnerDeps,
+  type MatchingPassDeps,
   type PriceIdStrategy,
 } from "./runner.js";
 import type { ResilientPriceStreamHandle } from "./resilient-price-stream.js";
@@ -116,6 +124,7 @@ async function main(): Promise<void> {
   const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? 15_000);
   const healthIntervalMs = Number(process.env.HEALTH_INTERVAL_MS ?? 5_000);
   const requestTimeoutMs = Number(process.env.REQUEST_TIMEOUT_MS ?? 10_000);
+  const matchMaxMarkets = Number(process.env.MATCH_MAX_MARKETS ?? 300);
 
   const pool = createPool();
   const redis: RedisClient = createRedisClient();
@@ -157,6 +166,20 @@ async function main(): Promise<void> {
     logger: log,
   };
 
+  // Same-question matching collaborators. The embedding provider is the
+  // deterministic offline bag-of-words model for v1 — swap in a real model
+  // (hosted or local) behind the EmbeddingProvider port for production-quality
+  // matching. The calibration queue + label store are in-memory for v1
+  // (auto-confirmed links persist directly; only ambiguous pairs queue).
+  const matchingDeps: MatchingPassDeps = {
+    db: pool,
+    matchingRepo: new MatchingRepository(pool),
+    embeddings: new BagOfWordsEmbeddingProvider(),
+    calibrationQueue: new InMemoryCalibrationQueue(),
+    matchLabels: new InMemoryMatchLabelStore(),
+    logger: log,
+  };
+
   // One live price-stream handle per source; replaced each cycle as the active
   // set changes.
   const streams = new Map<string, ResilientPriceStreamHandle>();
@@ -182,6 +205,14 @@ async function main(): Promise<void> {
   // thousands of markets) must not starve the others (e.g. Predict.fun).
   const runCycle = async (): Promise<void> => {
     await Promise.allSettled(registry.all().map((source) => runSource(source)));
+    // After metadata is refreshed across all sources, run a bounded
+    // same-question matching pass so live data forms cross-platform canonical
+    // events (the comparison view + spread signals).
+    try {
+      await runMatchingPass(matchingDeps, matchMaxMarkets);
+    } catch (error) {
+      log("matching pass failed", { error: String(error) });
+    }
   };
 
   log("ingestion runner started", {
@@ -189,6 +220,7 @@ async function main(): Promise<void> {
     ingestIntervalMs,
     pollIntervalMs,
     requestTimeoutMs,
+    matchMaxMarkets,
   });
 
   // Run the first cycle without blocking startup, then on a fixed cadence.

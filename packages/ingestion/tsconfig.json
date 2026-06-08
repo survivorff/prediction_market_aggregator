@@ -4,7 +4,12 @@
     "rootDir": "src",
     "outDir": "dist"
   },
-  "references": [{ "path": "../core" }, { "path": "../storage" }, { "path": "../adapters" }],
+  "references": [
+    { "path": "../core" },
+    { "path": "../storage" },
+    { "path": "../adapters" },
+    { "path": "../matching" }
+  ],
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules", "**/*.test.ts"]
 }

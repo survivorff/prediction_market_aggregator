@@ -1,0 +1,52 @@
+{
+  "data": [
+    {
+      "id": 472,
+      "conditionId": "0xbcad63b00f19d2258f318615eedf2bab7ec5afbec1426d4497f8db19ce3e10f1",
+      "title": "Will BTC close above $100,000 in 2025?",
+      "question": "Will BTC close above $100,000 in 2025?",
+      "description": "Resolves YES if the BNB-Chain Chainlink BTC/USD feed closes above 100000 on 2025-12-31.",
+      "categorySlug": "btc-100k-2025",
+      "tradingStatus": "OPEN",
+      "status": "REGISTERED",
+      "feeRateBps": 200,
+      "decimalPrecision": 3,
+      "isNegRisk": false,
+      "kalshiMarketTicker": null,
+      "spreadThreshold": 0.06,
+      "outcomes": [
+        {
+          "indexSet": 1,
+          "name": "Yes",
+          "onChainId": "99687883996711364087088282638523080562700966541094159995494261186865075656885",
+          "status": null
+        },
+        {
+          "indexSet": 2,
+          "name": "No",
+          "onChainId": "6040251633342283005115896327558952818368938050220830653939030411351823082209",
+          "status": null
+        }
+      ],
+      "resolverAddress": "0x52DA245ac170155391e7607c67b77D549005002d"
+    },
+    {
+      "id": 473,
+      "conditionId": "0x9f12ab34cd56ef7890123456789abcdef0123456789abcdef0123456789abcd",
+      "title": "Crystal Palace FC to win",
+      "question": "Crystal Palace FC to win",
+      "categorySlug": "epl-cry-mac-2025-12-14",
+      "tradingStatus": "RESOLVED",
+      "status": "REGISTERED",
+      "feeRateBps": 200,
+      "isNegRisk": true,
+      "kalshiMarketTicker": "EPLCRY",
+      "outcomes": [
+        { "indexSet": 1, "name": "Yes", "onChainId": "111111111111111111111111" },
+        { "indexSet": 2, "name": "No", "onChainId": "222222222222222222222222" }
+      ],
+      "resolverAddress": "0x52DA245ac170155391e7607c67b77D549005002d"
+    }
+  ],
+  "cursor": "NDcz"
+}

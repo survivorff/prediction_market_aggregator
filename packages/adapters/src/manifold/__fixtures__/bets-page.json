@@ -1,0 +1,42 @@
+[
+  {
+    "id": "bet004",
+    "contractId": "kj3h2g1f0e9d",
+    "userId": "u4",
+    "amount": 50,
+    "outcome": "YES",
+    "probBefore": 0.4,
+    "probAfter": 0.42,
+    "createdTime": 1735700400000
+  },
+  {
+    "id": "bet003",
+    "contractId": "kj3h2g1f0e9d",
+    "userId": "u3",
+    "amount": 25,
+    "outcome": "YES",
+    "probBefore": 0.38,
+    "probAfter": 0.4,
+    "createdTime": 1735696800000
+  },
+  {
+    "id": "bet002",
+    "contractId": "kj3h2g1f0e9d",
+    "userId": "u2",
+    "amount": 100,
+    "outcome": "NO",
+    "probBefore": 0.41,
+    "probAfter": 0.38,
+    "createdTime": 1735693200000
+  },
+  {
+    "id": "bet001",
+    "contractId": "kj3h2g1f0e9d",
+    "userId": "u1",
+    "amount": 75,
+    "outcome": "YES",
+    "probBefore": 0.35,
+    "probAfter": 0.41,
+    "createdTime": 1735689600000
+  }
+]

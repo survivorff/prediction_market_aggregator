@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Next.js (apps/web)
+.next/
+next-env.d.ts
+
+# Test / coverage
+coverage/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.DS_Store
+*.log
+
+# Tooling / session artifacts
+.playwright-mcp/
+*.png
+!docs/**/*.png

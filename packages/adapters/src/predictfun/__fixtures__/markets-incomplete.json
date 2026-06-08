@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "id": 990001,
+      "title": "Bare market with no metrics",
+      "tradingStatus": "OPEN"
+    },
+    {
+      "id": 990002,
+      "question": "Market with a malformed outcomes field",
+      "categorySlug": "misc",
+      "outcomes": "not-an-array",
+      "spreadThreshold": "0.04"
+    }
+  ]
+}

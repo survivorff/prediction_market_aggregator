@@ -1,0 +1,28 @@
+[
+  {
+    "id": "incomplete001",
+    "creatorUsername": "newuser",
+    "question": "Will the experimental long-tail question resolve YES?",
+    "slug": "experimental-long-tail-question",
+    "outcomeType": "BINARY",
+    "mechanism": "cpmm-1",
+    "probability": 0.5,
+    "createdTime": 1704067200000
+  },
+  {
+    "id": "incomplete002",
+    "creatorUsername": "newuser",
+    "question": "Multi-answer free response market without a single probability",
+    "slug": "multi-answer-free-response",
+    "outcomeType": "MULTIPLE_CHOICE",
+    "mechanism": "cpmm-multi-1",
+    "answers": [
+      { "id": "a1", "text": "Option A", "probability": 0.3 },
+      { "id": "a2", "text": "Option B", "probability": 0.45 },
+      { "id": "a3", "text": "Option C", "probability": 0.25 }
+    ],
+    "totalLiquidity": 900.0,
+    "createdTime": 1704067200000,
+    "groupSlugs": ["technology"]
+  }
+]

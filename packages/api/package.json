@@ -1,0 +1,33 @@
+{
+  "name": "@pma/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Outbound API gateway: REST + GraphQL + WebSocket fan-out.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run",
+    "start": "node dist/main.js",
+    "dev": "node --watch dist/main.js",
+    "seed": "node dist/seed.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.1.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/websocket": "^11.2.0",
+    "@pma/alerts": "*",
+    "@pma/core": "*",
+    "@pma/matching": "*",
+    "@pma/storage": "*",
+    "fastify": "^5.8.5"
+  }
+}

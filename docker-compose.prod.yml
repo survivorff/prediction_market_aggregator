@@ -1,0 +1,109 @@
+# Production-style orchestration for the full Prediction Market Aggregator
+# stack: datastores + a one-shot migration job + the API gateway, the ingestion
+# runner, and the web frontend.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Override secrets/URLs via an .env file or the shell environment. Do NOT commit
+# real credentials — see .env.example for the variable names.
+
+services:
+  postgres:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pma}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pma}
+      POSTGRES_DB: ${POSTGRES_DB:-pma}
+    volumes:
+      - pma-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pma} -d ${POSTGRES_DB:-pma}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - pma-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot migration job: applies SQL migrations, then exits 0.
+  migrate:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://pma:pma@postgres:5432/pma}
+    volumes:
+      - ./packages/storage/migrations:/migrations:ro
+    entrypoint: ["/bin/bash", "/migrations/apply.sh"]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://pma:pma@postgres:5432/pma}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      API_PORT: "4000"
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      # MUST be overridden in a real deployment (no insecure default in prod).
+      API_DEV_TOKEN: ${API_DEV_TOKEN:?set API_DEV_TOKEN or wire a real authenticator}
+    command: ["node", "packages/api/dist/main.js"]
+    ports:
+      - "4000:4000"
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://pma:pma@postgres:5432/pma}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      INGEST_INTERVAL_MS: ${INGEST_INTERVAL_MS:-300000}
+      POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-20000}
+      REQUEST_TIMEOUT_MS: ${REQUEST_TIMEOUT_MS:-10000}
+      PREDICTFUN_API_KEY: ${PREDICTFUN_API_KEY:-}
+    command: ["node", "packages/ingestion/dist/main.js"]
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  pma-postgres-data:
+  pma-redis-data:

@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/adapters" },
+    { "path": "packages/storage" },
+    { "path": "packages/ingestion" },
+    { "path": "packages/matching" },
+    { "path": "packages/api" },
+    { "path": "packages/alerts" }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "marketId": 472,
+    "asks": [
+      [0.62, 2.2894],
+      [0.63, 5.1]
+    ],
+    "bids": [
+      [0.58, 4.0],
+      [0.57, 9.3]
+    ],
+    "lastOrderSettled": {
+      "id": "312750",
+      "kind": "LIMIT",
+      "marketId": 472,
+      "outcome": "No",
+      "price": "0.61",
+      "side": "Bid"
+    },
+    "updateTimestampMs": 1775914128448
+  }
+}

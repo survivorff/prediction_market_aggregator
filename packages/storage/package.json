@@ -1,0 +1,29 @@
+{
+  "name": "@pma/storage",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Postgres/TimescaleDB repositories, Redis cache, and migrations.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run",
+    "migrate": "./migrations/apply.sh"
+  },
+  "dependencies": {
+    "@pma/core": "*",
+    "ioredis": "^5.4.1",
+    "pg": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
+  }
+}

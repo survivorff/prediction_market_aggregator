@@ -1,0 +1,54 @@
+{
+  "data": [
+    {
+      "id": "253591",
+      "conditionId": "0x9f8e7d6c5b4a39281706f5e4d3c2b1a0998877665544332211000ffeeddccbb",
+      "questionID": "0x1122334455667788990011223344556677889900112233445566778899001122",
+      "slug": "will-bitcoin-reach-150000-by-december-31-2025",
+      "question": "Will Bitcoin reach $150,000 by December 31, 2025?",
+      "description": "This market resolves YES if the Coinbase BTC-USD spot price is at or above $150,000 at any point before the end date.",
+      "active": true,
+      "closed": false,
+      "archived": false,
+      "umaResolutionStatus": "proposed",
+      "volume": "5234100.10",
+      "volume24hr": "152340.55",
+      "liquidity": "84210.00",
+      "spread": "0.02",
+      "outcomes": "[\"Yes\", \"No\"]",
+      "outcomePrices": "[\"0.38\", \"0.62\"]",
+      "clobTokenIds": "[\"71291837465019283746501928374650192837465019283746501928374650192\", \"45019283746501928374650192837465019283746501928374650192837465012\"]",
+      "resolutionSource": "Coinbase BTC-USD spot price",
+      "endDate": "2025-12-31T23:59:59Z",
+      "events": [
+        {
+          "id": "12345",
+          "title": "Bitcoin Price Predictions 2025",
+          "slug": "bitcoin-price-predictions-2025"
+        }
+      ]
+    },
+    {
+      "id": "253592",
+      "conditionId": "0xaabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
+      "slug": "will-the-fed-cut-rates-in-march-2025",
+      "question": "Will the Fed cut interest rates at its March 2025 meeting?",
+      "description": "Resolves YES if the FOMC reduces the federal funds target range at the March 2025 meeting.",
+      "active": false,
+      "closed": true,
+      "archived": false,
+      "umaResolutionStatus": "resolved",
+      "volume": "1820000.00",
+      "volume24hr": "0",
+      "liquidity": "12500.00",
+      "spread": "0.04",
+      "outcomes": "[\"Yes\", \"No\"]",
+      "outcomePrices": "[\"0.91\", \"0.09\"]",
+      "clobTokenIds": "[\"30000000000000000000000000000000000000000000000000000000000000001\", \"30000000000000000000000000000000000000000000000000000000000000002\"]",
+      "resolutionSource": "FOMC statement",
+      "endDate": "2025-03-19T18:00:00Z",
+      "eventId": "67890"
+    }
+  ],
+  "next_cursor": "MjUw"
+}

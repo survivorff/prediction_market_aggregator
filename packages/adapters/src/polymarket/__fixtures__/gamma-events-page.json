@@ -1,0 +1,21 @@
+{
+  "data": [
+    {
+      "id": "12345",
+      "title": "Bitcoin Price Predictions 2025",
+      "slug": "bitcoin-price-predictions-2025",
+      "description": "A collection of markets on the price of Bitcoin throughout 2025.",
+      "resolutionSource": "Coinbase BTC-USD spot price",
+      "endDate": "2025-12-31T23:59:59Z",
+      "tags": [{ "label": "Crypto", "slug": "crypto" }, { "label": "Bitcoin" }]
+    },
+    {
+      "id": "67890",
+      "title": "US Monetary Policy 2025",
+      "slug": "us-monetary-policy-2025",
+      "endDate": "2025-12-31T23:59:59Z",
+      "tags": [{ "label": "Economics", "slug": "economics" }]
+    }
+  ],
+  "next_cursor": "LTE="
+}

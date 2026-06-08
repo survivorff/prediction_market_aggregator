@@ -1,0 +1,23 @@
+{
+  "name": "@pma/adapters",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Per-platform MarketSource implementations. Depends only on @pma/core ports.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pma/core": "*"
+  }
+}

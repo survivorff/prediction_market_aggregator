@@ -1,0 +1,16 @@
+{
+  "id": "kj3h2g1f0e9d",
+  "creatorUsername": "forecaster",
+  "question": "Will Bitcoin reach $150,000 by the end of 2025?",
+  "outcomeType": "BINARY",
+  "mechanism": "cpmm-1",
+  "probability": 0.42,
+  "pool": { "YES": 1200.5, "NO": 1654.2 },
+  "totalLiquidity": 2854.7,
+  "volume": 18500.25,
+  "volume24Hours": 1320.5,
+  "isResolved": false,
+  "closeTime": 1767225599000,
+  "createdTime": 1704067200000,
+  "groupSlugs": ["crypto", "bitcoin"]
+}

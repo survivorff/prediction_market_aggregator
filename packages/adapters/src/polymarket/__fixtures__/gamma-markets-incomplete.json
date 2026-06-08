@@ -1,0 +1,23 @@
+[
+  {
+    "id": "990001",
+    "slug": "will-team-a-win-the-championship",
+    "question": "Will Team A win the championship?",
+    "active": true,
+    "closed": false,
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.55\", \"0.45\"]",
+    "clobTokenIds": "[\"88000000000000000000000000000000000000000000000000000000000000001\", \"88000000000000000000000000000000000000000000000000000000000000002\"]"
+  },
+  {
+    "id": "990002",
+    "slug": "obscure-long-tail-market",
+    "question": "Will the obscure long-tail event occur?",
+    "active": true,
+    "closed": false,
+    "volume24hr": "12.50",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.10\"]",
+    "clobTokenIds": "[\"77000000000000000000000000000000000000000000000000000000000000001\"]"
+  }
+]

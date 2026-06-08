@@ -1,0 +1,32 @@
+{
+  // Standalone Next.js tsconfig — intentionally NOT extending the repo's
+  // NodeNext/composite `tsconfig.base.json`. A Next app needs DOM libs, JSX,
+  // and bundler module resolution, which are incompatible with the backend
+  // packages' strict NodeNext project-reference build. `apps/web` is therefore
+  // isolated from the root `tsc --build` graph (see README "Frontend" note) and
+  // type-checked on its own via `npm run typecheck` (tsc --noEmit) / `next build`.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "verbatimModuleSyntax": false,
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next", "dist"]
+}

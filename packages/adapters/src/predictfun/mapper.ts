@@ -37,6 +37,7 @@ import type {
   ResolutionCriteria,
 } from "@pma/core";
 import {
+  inferCategory,
   normalizeProbability,
   normalizeSpread,
   normalizeResolutionCriteria,
@@ -159,6 +160,7 @@ export function mapMarket(rawMarket: unknown): NormalizedMarket | null {
   if (externalId === null) return null;
 
   const question = asStringOrNull(getFirstField(rawMarket, ["question", "title"])) ?? "";
+  const categorySlug = asStringOrNull(getFirstField(rawMarket, ["categorySlug"]));
 
   return {
     externalId,
@@ -167,6 +169,8 @@ export function mapMarket(rawMarket: unknown): NormalizedMarket | null {
     ),
     question,
     status: mapTradingStatus(rawMarket),
+    // Category hint: the category slug (e.g. "epl-cry-mac-...") + question text.
+    category: inferCategory(`${categorySlug ?? ""} ${question}`),
     volume24h: asFiniteNumberOrNull(
       getFirstField(rawMarket, ["volume24h", "volume24hr", "volume_24h"]),
     ),

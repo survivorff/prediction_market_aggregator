@@ -4,7 +4,7 @@
  */
 
 export type { Category } from "./category.js";
-export { CATEGORIES, isCategory } from "./category.js";
+export { CATEGORIES, isCategory, inferCategory } from "./category.js";
 
 export type { Source, SourceType } from "./source.js";
 export { SOURCE_TYPES, isSourceType } from "./source.js";

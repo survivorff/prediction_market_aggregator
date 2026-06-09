@@ -13,13 +13,14 @@
  *
  * Note on `category`: the `market` table denormalizes `category` for fast
  * discovery filtering, but the normalized domain `Market` (and therefore
- * `MarketUpsert = Omit<Market,"id">`) carries no category — categories live on
- * `event`/`canonical_event` and are projected by a higher layer. New rows are
- * inserted with `'other'` and the column is preserved (never clobbered) on
- * conflict so denormalization set elsewhere survives idempotent re-syncs.
+ * `MarketUpsert = Omit<Market,"id">`) carries no category. The adapter's
+ * category hint is passed to {@link MarketRepository.upsertMarket} as the
+ * optional `category` argument and projected onto the row; when omitted, a new
+ * row defaults to `'other'` and an existing row's category is preserved on
+ * conflict (so a value set elsewhere survives an idempotent re-sync).
  */
 
-import type { Market, MarketRepository as IMarketRepository, MarketUpsert } from "@pma/core";
+import type { Category, Market, MarketRepository as IMarketRepository, MarketUpsert } from "@pma/core";
 import type { Queryable } from "../client.js";
 import { mapMarketRow, serializeResolutionCriteria, type MarketRow } from "../mappers.js";
 import { loadCursorRow, saveCursorRow } from "./cursor-repository.js";
@@ -44,10 +45,15 @@ export class MarketRepository implements IMarketRepository {
   /**
    * Idempotent upsert keyed on `(source_id, external_id)`. Content columns are
    * updated only when they differ from the stored row (`IS DISTINCT FROM`
-   * guard), keeping repeated syncs a no-op. `category` is intentionally not in
-   * the update set (see file header).
+   * guard), keeping repeated syncs a no-op.
+   *
+   * `category` (optional) projects the adapter's category hint onto the
+   * denormalized column: a new row uses it (falling back to `'other'`), and an
+   * existing row is updated when it differs. When `category` is omitted, a new
+   * row defaults to `'other'` and an existing row's category is preserved (so a
+   * value set by another layer survives an idempotent re-sync).
    */
-  async upsertMarket(market: MarketUpsert): Promise<Market> {
+  async upsertMarket(market: MarketUpsert, category?: Category): Promise<Market> {
     const params = [
       market.sourceId,
       market.eventId,
@@ -59,6 +65,7 @@ export class MarketRepository implements IMarketRepository {
       market.liquidity,
       market.spread,
       serializeResolutionCriteria(market.resolutionCriteria),
+      category ?? null,
     ];
 
     const result = await this.db.query<MarketRow>(
@@ -66,7 +73,7 @@ export class MarketRepository implements IMarketRepository {
          source_id, event_id, canonical_event_id, external_id, question,
          category, status, volume_24h, liquidity, spread, resolution_criteria
        )
-       VALUES ($1, $2, $3, $4, $5, 'other', $6, $7, $8, $9, $10::jsonb)
+       VALUES ($1, $2, $3, $4, $5, COALESCE($11, 'other'), $6, $7, $8, $9, $10::jsonb)
        ON CONFLICT (source_id, external_id) DO UPDATE SET
          event_id = EXCLUDED.event_id,
          canonical_event_id = EXCLUDED.canonical_event_id,
@@ -76,6 +83,7 @@ export class MarketRepository implements IMarketRepository {
          liquidity = EXCLUDED.liquidity,
          spread = EXCLUDED.spread,
          resolution_criteria = EXCLUDED.resolution_criteria,
+         category = COALESCE($11, market.category),
          updated_at = now()
        WHERE market.event_id IS DISTINCT FROM EXCLUDED.event_id
           OR market.canonical_event_id IS DISTINCT FROM EXCLUDED.canonical_event_id
@@ -85,6 +93,7 @@ export class MarketRepository implements IMarketRepository {
           OR market.liquidity IS DISTINCT FROM EXCLUDED.liquidity
           OR market.spread IS DISTINCT FROM EXCLUDED.spread
           OR market.resolution_criteria IS DISTINCT FROM EXCLUDED.resolution_criteria
+          OR ($11 IS NOT NULL AND market.category IS DISTINCT FROM $11)
        RETURNING ${MARKET_COLUMNS}`,
       params,
     );

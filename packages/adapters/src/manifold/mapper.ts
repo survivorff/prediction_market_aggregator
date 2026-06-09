@@ -34,6 +34,7 @@ import type {
 import {
   isCategory,
   isMarketStatus,
+  inferCategory,
   normalizeProbability,
   normalizeBinaryProbabilities,
   normalizeSpread,
@@ -278,12 +279,18 @@ export function mapMarket(rawMarket: unknown, now: Date): NormalizedMarket | nul
   if (externalId === null) return null;
 
   const question = asStringOrNull(getFirstField(rawMarket, ["question", "title"])) ?? "";
+  const groupSlugs = asArray(getField(rawMarket, "groupSlugs"))
+    .map((s) => asStringOrNull(s))
+    .filter((s): s is string => s !== null);
 
   return {
     externalId,
     eventExternalId: extractEventExternalId(rawMarket),
     question,
     status: mapMarketStatus(rawMarket, now),
+    // Category hint: Manifold group slugs (e.g. "us-politics", "crypto-prices")
+    // + the question text.
+    category: inferCategory(`${groupSlugs.join(" ")} ${question}`),
     volume24h: asFiniteNumberOrNull(
       getFirstField(rawMarket, ["volume24Hours", "volume24hr", "volume24h"]),
     ),

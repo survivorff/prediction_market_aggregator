@@ -85,6 +85,8 @@ describe("Polymarket fixtures — Gamma /markets normalization (Req 1.1)", () =>
     expect(btc!.eventExternalId).toBe("12345");
     expect(btc!.question).toBe("Will Bitcoin reach $150,000 by December 31, 2025?");
     expect(btc!.status).toBe("open");
+    // Category inferred from tags/question (denormalized hint, Req discovery).
+    expect(btc!.category).toBe("crypto");
     expect(btc!.volume24h).toBeCloseTo(152340.55, 2);
     expect(btc!.liquidity).toBeCloseTo(84210, 2);
     expect(btc!.spread).toBeCloseTo(0.02, 6);

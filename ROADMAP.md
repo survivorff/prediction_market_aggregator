@@ -40,10 +40,14 @@ Priority order toward a usable, production-grade v1.
    cross-source pairs (an aggregator links across venues); the calibration queue
    + label store are in-memory (auto-confirmed links persist; durable
    queue/`match_label` wiring is a follow-up).
-2. **Category enrichment.** Synced markets are all `category = 'other'` (event
-   metadata is not synced and the domain `Market` carries no category). Add
-   event sync + category projection, or per-adapter market-level category
-   derivation. (Also improves matching: candidate pre-filtering keys on category.)
+2. **~~Category enrichment.~~** ✅ Done. Adapters now derive a category hint
+   (`inferCategory` over platform tags / group slugs / category slug + the
+   question text) onto the optional `NormalizedMarket.category`, which the
+   ingestion upsert projects onto the denormalized `market.category` column.
+   Discovery category filtering and the matching candidate pre-filter now work
+   on live data (e.g. World Cup → `sports`, elections → `politics`). **Remaining
+   quality work**: a keyword classifier leaves niche questions as `'other'`;
+   improve recall with platform category-tag mapping or a learned classifier.
 3. **Real authentication + secrets.** Replace the dev bearer token with a real
    identity provider behind the existing `authenticate` port; move all
    credentials (DB, Redis, upstream API keys) into a secrets manager. Remove the

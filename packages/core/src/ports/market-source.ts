@@ -118,6 +118,14 @@ export interface NormalizedMarket {
   spread: number | null;
   outcomes: NormalizedOutcome[];
   resolutionCriteria: ResolutionCriteria;
+  /**
+   * Adapter-derived category hint (the normalized domain `Market` carries no
+   * category — it is denormalized onto the storage row at ingestion). Optional:
+   * when omitted, the persistence layer defaults the row to `"other"`. Adapters
+   * should populate it from their best category signal (tags / group slugs /
+   * category slug + question text) — see {@link inferCategory}.
+   */
+  category?: Category;
 }
 
 /** A raw-normalized outcome payload carried within a {@link NormalizedMarket}. */

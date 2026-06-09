@@ -31,6 +31,7 @@ import type {
 import {
   isCategory,
   isMarketStatus,
+  inferCategory,
   normalizeProbability,
   normalizeBinaryProbabilities,
   normalizeSpread,
@@ -300,6 +301,9 @@ export function mapMarket(rawMarket: unknown): NormalizedMarket | null {
     eventExternalId: extractEventExternalId(rawMarket),
     question,
     status: mapMarketStatus(rawMarket),
+    // Category hint for the denormalized column: prefer an explicit category
+    // tag/label when present, else infer from the question text.
+    category: inferCategory(`${polymarketCategoryHint(rawMarket)} ${question}`),
     volume24h: asFiniteNumberOrNull(
       getFirstField(rawMarket, ["volume24hr", "volume24Hr", "volume_24hr"]),
     ),
@@ -308,6 +312,30 @@ export function mapMarket(rawMarket: unknown): NormalizedMarket | null {
     outcomes: mapOutcomes(rawMarket),
     resolutionCriteria: mapResolutionCriteria(rawMarket),
   };
+}
+
+/**
+ * Best category hint string from a Gamma market: any explicit `category` field
+ * plus the labels of any embedded event tags. Joined into a single string that
+ * {@link inferCategory} keyword-matches (alongside the question).
+ */
+function polymarketCategoryHint(rawMarket: unknown): string {
+  const parts: string[] = [];
+  const direct = asStringOrNull(getField(rawMarket, "category"));
+  if (direct !== null) parts.push(direct);
+  // Tags may live on the market or on its embedded events.
+  for (const tag of asArray(getField(rawMarket, "tags"))) {
+    const label = asStringOrNull(getFirstField(tag, ["label", "slug", "name"]));
+    if (label !== null) parts.push(label);
+  }
+  const events = asArray(getField(rawMarket, "events"));
+  if (events.length > 0) {
+    for (const tag of asArray(getField(events[0], "tags"))) {
+      const label = asStringOrNull(getFirstField(tag, ["label", "slug", "name"]));
+      if (label !== null) parts.push(label);
+    }
+  }
+  return parts.join(" ");
 }
 
 /** Extract the owning event's native id from a Gamma market, or `null`. */

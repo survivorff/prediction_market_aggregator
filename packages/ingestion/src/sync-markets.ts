@@ -174,8 +174,9 @@ export async function syncMarkets(
     for (const rawMarket of page.items) {
       const { market, outcomes } = normalizeAndValidate(rawMarket, sourceId);
 
-      // Idempotent: ON CONFLICT (source_id, external_id) DO UPDATE.
-      const persisted = await repo.upsertMarket(market);
+      // Idempotent: ON CONFLICT (source_id, external_id) DO UPDATE. The
+      // adapter's category hint (when present) is projected onto the row.
+      const persisted = await repo.upsertMarket(market, rawMarket.category);
 
       if (outcomeRepo && outcomes.length > 0) {
         const rows: OutcomeUpsert[] = outcomes.map((outcome) => ({

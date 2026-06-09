@@ -96,8 +96,14 @@ export interface MarketRepository {
    * Idempotent upsert keyed on `(sourceId, externalId)`
    * (`ON CONFLICT (source_id, external_id) DO UPDATE`). Returns the persisted
    * market with its resolved internal `id`.
+   *
+   * The optional `category` projects the adapter's category hint onto the
+   * denormalized `market.category` column (the domain `Market` carries no
+   * category). When omitted, a new row defaults to `"other"` and an existing
+   * row's category is preserved (so a category set by a later layer survives an
+   * idempotent re-sync).
    */
-  upsertMarket(market: MarketUpsert): Promise<Market>;
+  upsertMarket(market: MarketUpsert, category?: Category): Promise<Market>;
 
   /** Resolve a market by its idempotency key; `null` when not present. */
   findByExternalId(sourceId: string, externalId: string): Promise<Market | null>;

@@ -79,6 +79,8 @@ describe("Predict.fun fixtures — /v1/markets normalization (Req 1.1)", () => {
     expect(btc!.eventExternalId).toBe("btc-100k-2025");
     expect(btc!.question).toBe("Will BTC close above $100,000 in 2025?");
     expect(btc!.status).toBe("open");
+    // Category derived from the categorySlug + question (denormalized hint).
+    expect(btc!.category).toBe("crypto");
     // Binary Yes/No outcomes with on-chain token ids; no price in metadata.
     expect(btc!.outcomes).toHaveLength(2);
     expect(btc!.outcomes[0]?.label).toBe("Yes");
@@ -99,6 +101,8 @@ describe("Predict.fun fixtures — /v1/markets normalization (Req 1.1)", () => {
     // is preserved in the raw criteria for matching Layer 4.
     expect(epl!.externalId).toBe("473");
     expect(epl!.status).toBe("resolved");
+    // Category derived from the EPL category slug (e.g. "epl-cry-mac-...").
+    expect(epl!.category).toBe("sports");
     expect(epl!.resolutionCriteria.raw).toMatchObject({ kalshiMarketTicker: "EPLCRY" });
   });
 

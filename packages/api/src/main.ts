@@ -11,18 +11,28 @@
  *   API_HOST              listen host (default 0.0.0.0)
  *   DATABASE_URL          Postgres (default postgres://pma:pma@localhost:5432/pma)
  *   REDIS_URL             Redis (default redis://localhost:6379)
- *   API_DEV_TOKEN         dev bearer token that authenticates user-scoped routes
- *                         (default "dev-token"); maps to a fixed demo user id.
+ *   JWT_SECRET            HS256 secret for production bearer auth. When set,
+ *                         user-scoped routes authenticate via JWT (`sub` claim
+ *                         → userId). Takes precedence over API_DEV_TOKEN.
+ *   API_DEV_TOKEN         DEV-ONLY static bearer token → a fixed demo user.
+ *                         Ignored when JWT_SECRET is set, and ignored entirely
+ *                         when NODE_ENV=production (so prod is never secured by
+ *                         a static token). Default "dev-token" (dev only).
  *   CORS_ORIGIN           allowed browser origin(s) for CORS, comma-separated;
  *                         "*" reflects any origin (default
  *                         "http://localhost:3000" for the local web frontend).
+ *
+ * Authentication is SAFE-BY-DEFAULT: in production with neither JWT_SECRET nor a
+ * real authenticator wired, user-scoped routes stay CLOSED (401) rather than
+ * falling back to an insecure static token.
  *
  * The gateway serves EXCLUSIVELY from storage/Redis (Requirement 9.1).
  */
 
 import { createPool, createRedisClient, type RedisClient } from "@pma/storage";
 import { buildGatewayDeps } from "./deps.js";
-import { bearerAuthenticator } from "./auth.js";
+import { bearerAuthenticator, type Authenticator } from "./auth.js";
+import { jwtBearerVerifier } from "./jwt.js";
 import { createServer } from "./server.js";
 
 /** Per-source adapter capabilities (declared in code, not persisted). */
@@ -53,7 +63,7 @@ const DEMO_USER_ID = "00000000-0000-0000-0000-0000000000aa";
 async function main(): Promise<void> {
   const port = Number(process.env.API_PORT ?? 4000);
   const host = process.env.API_HOST ?? "0.0.0.0";
-  const devToken = process.env.API_DEV_TOKEN ?? "dev-token";
+  const isProduction = process.env.NODE_ENV === "production";
 
   // Allowed browser origin(s) for CORS. The web frontend runs on a different
   // origin than the gateway, so cross-origin fetches need this. "*" reflects
@@ -81,11 +91,31 @@ async function main(): Promise<void> {
     console.warn("[api] Redis unavailable — serving latest prices from storage only");
   }
 
-  // Dev authenticator: accept a single configured bearer token → demo user.
-  // Production swaps this for a real JWT/session verifier.
-  const authenticate = bearerAuthenticator((token) =>
-    token === devToken ? { userId: DEMO_USER_ID } : null,
-  );
+  // Authentication selection (safe-by-default):
+  //   1. JWT_SECRET set        → production HS256 JWT verification (sub → userId).
+  //   2. dev + API_DEV_TOKEN   → a static dev token mapping to a demo user.
+  //   3. production, no secret → authenticator left undefined: user-scoped
+  //      routes stay CLOSED (401) rather than opening on an insecure default.
+  const jwtSecret = process.env.JWT_SECRET;
+  let authenticate: Authenticator | undefined;
+  if (jwtSecret !== undefined && jwtSecret !== "") {
+    authenticate = bearerAuthenticator(jwtBearerVerifier(jwtSecret));
+    // eslint-disable-next-line no-console
+    console.log("[api] auth: HS256 JWT (JWT_SECRET)");
+  } else if (!isProduction) {
+    const devToken = process.env.API_DEV_TOKEN ?? "dev-token";
+    authenticate = bearerAuthenticator((token) =>
+      token === devToken ? { userId: DEMO_USER_ID } : null,
+    );
+    // eslint-disable-next-line no-console
+    console.warn("[api] auth: DEV static token (not for production). Set JWT_SECRET for real auth.");
+  } else {
+    authenticate = undefined;
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[api] auth: DISABLED in production (no JWT_SECRET) — user-scoped routes are closed (401).",
+    );
+  }
 
   const deps = buildGatewayDeps({
     db: pool,

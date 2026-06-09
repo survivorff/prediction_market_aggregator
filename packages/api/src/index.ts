@@ -35,6 +35,10 @@ export {
   type BearerTokenVerifier,
 } from "./auth.js";
 
+// HS256 JWT bearer verification (Requirement 9.4): a dependency-free,
+// production-usable BearerTokenVerifier for symmetric-key JWTs.
+export { verifyJwtHs256, jwtBearerVerifier, type JwtVerifyOptions } from "./jwt.js";
+
 // WebSocket fan-out (task 7.4): the `WS /ws` route + the transport-agnostic
 // relay logic (subscribe protocol → Redis pub/sub → relayed envelopes).
 export { registerWebSocketFanout, WS_FANOUT_PATH } from "./websocket.js";

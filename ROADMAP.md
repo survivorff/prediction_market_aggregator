@@ -48,10 +48,14 @@ Priority order toward a usable, production-grade v1.
    on live data (e.g. World Cup → `sports`, elections → `politics`). **Remaining
    quality work**: a keyword classifier leaves niche questions as `'other'`;
    improve recall with platform category-tag mapping or a learned classifier.
-3. **Real authentication + secrets.** Replace the dev bearer token with a real
-   identity provider behind the existing `authenticate` port; move all
-   credentials (DB, Redis, upstream API keys) into a secrets manager. Remove the
-   insecure `dev-token` default in production.
+3. **~~Real authentication~~ + secrets.** ✅ Auth done. The gateway now supports
+   production HS256 JWT bearer auth (`JWT_SECRET` → verify token, `sub` claim →
+   userId) behind the existing `authenticate` port; the dev static token is
+   dev-only and is ignored under `NODE_ENV=production` (safe-by-default: no
+   insecure fallback — routes stay closed without a real authenticator).
+   **Remaining**: move all credentials (DB, Redis, `JWT_SECRET`, upstream API
+   keys) into a real secrets manager / vault rather than env files; add
+   asymmetric (RS256/ES256, JWKS) verification if the IdP requires it.
 4. **Deployment & CI/CD.** Dockerfiles + `docker-compose.prod.yml` and a CI
    workflow are in place; still needed: a real registry/release pipeline,
    environment promotion, and infra-as-code for the target platform.

@@ -64,9 +64,11 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://pma:pma@postgres:5432/pma}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       API_PORT: "4000"
+      NODE_ENV: production
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-      # MUST be overridden in a real deployment (no insecure default in prod).
-      API_DEV_TOKEN: ${API_DEV_TOKEN:?set API_DEV_TOKEN or wire a real authenticator}
+      # Production auth: HS256 JWT. Required — the gateway will otherwise leave
+      # user-scoped routes closed (401) in production (no insecure fallback).
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (HS256) for production auth}
     command: ["node", "packages/api/dist/main.js"]
     ports:
       - "4000:4000"
